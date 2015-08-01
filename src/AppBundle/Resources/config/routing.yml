@@ -1,0 +1,8 @@
+topicarticle:
+    type:           rest
+    resource:       AppBundle\Controller\TopicArticleController
+    name_prefix:    topicarticle_
+article:
+    type:           rest
+    resource:       AppBundle\Controller\ArticleController
+    name_prefix:    article_
