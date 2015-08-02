@@ -26,7 +26,7 @@ class Article
      * @ORM\ManyToOne(targetEntity="Topic", inversedBy="articles")
      * @ORM\JoinColumn(name="topic_id", referencedColumnName="id", nullable=FALSE)
      */
-    protected $articles;
+    protected $topic;
 
     /**
      * @var string
@@ -72,7 +72,7 @@ class Article
         return $this->topic;
     }
 
-    public function setPerson(Topic $topic = null)
+    public function setTopic(Topic $topic = null)
     {
         if ($this->topic !== null) {
             $this->topic->removeArticle($this);

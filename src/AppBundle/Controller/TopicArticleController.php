@@ -16,6 +16,7 @@ use FOS\RestBundle\Request\ParamFetcher;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\QueryBuilder;
 use AppBundle\Entity\Topic;
+use AppBundle\Form\TopicType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Nelmio\ApiDocBundle\Annotation\ApiDoc;
@@ -54,7 +55,7 @@ class TopicArticleController extends Controller
      */
     public function getAction(ParamFetcher $paramFetcher)
     {
-		$em = $this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
 
         return $em->getRepository('AppBundle:Topic')->findAll();
     }
@@ -67,7 +68,7 @@ class TopicArticleController extends Controller
      *      section="Topic",
      *      statusCodes={
      *          200="Returned when successful.",
-     *          401="Returned when the error."
+     *          401="Returned when exist an error."
      *      }
      * )
      *
@@ -80,9 +81,9 @@ class TopicArticleController extends Controller
      */
     public function getTopicAction($type_id)
     {
-    	$em = $this->getDoctrine()->getManager();
+        $em = $this->getDoctrine()->getManager();
 
-    	return $em->getRepository('AppBundle:Topic')->findById($type_id);
+        return $em->getRepository('AppBundle:Topic')->findById($type_id);
     }
 
   
@@ -94,7 +95,7 @@ class TopicArticleController extends Controller
      *      section="Topic",
      *      statusCodes={
      *          200="Returned when successful.",
-     *          401="Returned when the user is not authorized."
+     *          401="Returned when exist an error."
      *      }
      * )
      *
@@ -108,12 +109,156 @@ class TopicArticleController extends Controller
      */
     public function postAction(ParamFetcher $paramFetcher)
     {
-    	// $data = $paramFetcher->get('data');
-    	$data = $paramFetcher->all();
-        // decode request
-       // $data = is_string($data) ? (array) @json_decode($data, true) : $data;
+        $data = $paramFetcher->get('data');
+        $topicModel  = new Topic();
+        $em = $this->getDoctrine()->getManager();
 
-        var_dump($data);
+        // decode request
+        $topicData = is_string($data) ? (array) @json_decode($data, true) : $data;
+        $topicData['created'] = (new \DateTime())->format('d-M-y H:m:s');
+
+
+        //save data
+        $form = $this->createForm(new TopicType(), $topicModel);
+        $form->submit($topicData);
+
+        if ($form->isValid()) {
+            $em->persist($topicModel);
+            $em->flush();
+
+            return new JsonResponse(
+                [
+                  'success' => 'OK'
+                ],
+                200
+            );
+        }
+
+        return new JsonResponse(
+            [
+              'error' => (string) $form->getErrors(true, false)
+            ],
+            400
+        );
     }
 
+    /**
+     * Update a topic
+     * 
+     * @ApiDoc(
+     *      resource=true,
+     *      section="Topic",
+     *      statusCodes={
+     *          200="Returned when successful.",
+     *          401="Returned when exist an error."
+     *      }
+     * )
+     *
+     * @Put("/topics/{id}", requirements={"id" = "\d+"})
+     *
+     * @RequestParam(name="data", description="Topic model object data properties.", array=true)
+     *
+     * @param ParamFetcher $paramFetcher
+     *
+     * @return array
+     */
+    public function updateAction($id, ParamFetcher $paramFetcher)
+    {
+        $params['id'] = $id;
+        $params = array_merge($paramFetcher->all(), $params);
+
+        $data = $params['data'];
+
+        $em = $this->getDoctrine()->getEntityManager();
+        $topicObject = $em->getRepository('AppBundle:Topic')->find($id);
+
+        $em = $this->getDoctrine()->getManager();
+
+        if (!$topicObject) {
+            return new JsonResponse(
+                [
+                  'error' => 'No topic found for id '.$id
+                ],
+                400
+            );
+        }
+
+
+        // decode request
+        $topicData = is_string($data) ? (array) @json_decode($data, true) : $data;
+        $topicData['created'] = (new \DateTime())->format('d-M-y H:m:s');
+
+
+        $form = $this->createForm(new TopicType(), $topicObject);
+        $form->submit($topicData);
+
+        //validate data and  update
+        if ($form->isValid()) {
+
+            $em->persist($topicObject);
+            $em->flush();
+
+            return new JsonResponse(
+                [
+                  'success' => 'OK'
+                ],
+                200
+            );
+        }
+
+        return new JsonResponse(
+            [
+              'error' => (string) $form->getErrors(true, false)
+            ],
+            400
+        );
+
+    }
+
+    /**
+     * Delete Topic
+     *
+     * @ApiDoc(
+     *      resource=true,
+     *      section="Topic",
+     *      statusCodes={
+     *          202="Returned when successful.",
+     *          401="Returned when exist an error."
+     *      }
+     * )
+     *
+     * @Delete("/topics/{id}")
+     *
+     * @param mixed $id
+     * @param ParamFetcher $paramFetcher
+     *
+     * @return array
+     */
+    public function deleteAction($id, ParamFetcher $paramFetcher)
+    {
+        $params['id'] = $id;
+        $params = array_merge($paramFetcher->all(), $params);
+
+        $em = $this->getDoctrine()->getEntityManager();
+        $topicData = $em->getRepository('AppBundle:Topic')->find($id);
+
+        if (!$topicData) {
+            return new JsonResponse(
+                [
+                  'error' => 'No topic found for id '.$id
+                ],
+                400
+            );
+        }
+
+        $em->remove($topicData);
+        $em->flush();
+
+        return new JsonResponse(
+            [
+            'success' => 'OK'
+            ],
+            200
+        );
+    }
 }

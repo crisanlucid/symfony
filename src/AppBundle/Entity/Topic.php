@@ -3,6 +3,7 @@
 namespace AppBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * Topic
@@ -36,7 +37,7 @@ class Topic
     private $created;
 
     /**
-     * @ORM\OneToMany(targetEntity="Article", mappedBy="articles", cascade={"remove"})
+     * @ORM\OneToMany(targetEntity="Article", mappedBy="topic", cascade={"remove"})
      */
     private $articles;
 
